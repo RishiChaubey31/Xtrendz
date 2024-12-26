@@ -1,136 +1,301 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Twitter Trends</title>
+  <head>
+    <title>Twitter Trends with IP Tracking</title>
     <style>
-        body {
-            max-width: 800px;
-            margin: 20px auto;
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            line-height: 1.6;
-            background-color: #f5f5f5;
-        }
+      body {
+        max-width: 800px;
+        margin: 20px auto;
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        line-height: 1.6;
+        background-color: #f5f5f5;
+      }
 
-        h1 {
-            color: #1a1a1a;
-        }
+      h1,
+      h2,
+      h3 {
+        color: #1a1a1a;
+        margin-bottom: 20px;
+      }
 
-        button {
-            background-color: #1da1f2;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
+      button {
+        background-color: #1da1f2;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        margin: 10px 0;
+        transition: background-color 0.2s;
+      }
 
-        button:hover {
-            background-color: #1991db;
-        }
+      button:hover {
+        background-color: #1991db;
+      }
 
-        button:disabled {
-            background-color: #cccccc;
-        }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
 
-        #error-message {
-            color: red;
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #ffebee;
-            border-radius: 4px;
-            display: none;
-        }
+      #error-message {
+        color: #d32f2f;
+        margin: 10px 0;
+        padding: 15px;
+        background-color: #ffebee;
+        border-radius: 4px;
+        display: none;
+        border-left: 4px solid #d32f2f;
+      }
 
-        .trends-container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+      .trends-container {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        margin: 20px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
 
-        .trends-list {
-            list-style-type: none;
-            padding: 0;
-        }
+      .trends-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
 
-        .trends-list li {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
+      .trends-list li {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.2s;
+      }
 
-        .trends-list li:last-child {
-            border-bottom: none;
-        }
+      .trends-list li:hover {
+        background-color: #f8f9fa;
+      }
 
-        .mongo-record {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            word-break: break-word;
-            overflow-x: auto;
-        }
+      .trends-list li:last-child {
+        border-bottom: none;
+      }
 
-        .loading {
-            margin: 20px 0;
+      .ip-info {
+        background: #e3f2fd;
+        padding: 20px;
+        border-radius: 4px;
+        margin: 15px 0;
+        font-size: 14px;
+        line-height: 1.8;
+        border-left: 4px solid #1da1f2;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .info-label {
+        font-weight: bold;
+        color: #1a1a1a;
+      }
+
+      .mongo-record {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 4px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-x: auto;
+        margin: 15px 0;
+        font-size: 14px;
+        border: 1px solid #e0e0e0;
+      }
+
+      .loading {
+        margin: 20px 0;
+        color: #666;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .loading::after {
+        content: "";
+        width: 20px;
+        height: 20px;
+        border: 2px solid #1da1f2;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
         }
+      }
+
+      .history-container {
+        margin-top: 30px;
+      }
+
+      .history-item {
+        background: white;
+        padding: 20px;
+        margin: 15px 0;
+        border-radius: 4px;
+        border-left: 4px solid #1da1f2;
+        transition: transform 0.2s;
+      }
+
+      .history-item:hover {
+        transform: translateX(5px);
+      }
+
+      .timestamp {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 10px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 10px;
+        margin: 20px 0;
+        background: white;
+        padding: 10px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .tab {
+        padding: 10px 20px;
+        background: transparent;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        color: #666;
+        transition: all 0.2s;
+      }
+
+      .tab.active {
+        background: #1da1f2;
+        color: white;
+      }
+
+      .refresh-time {
+        color: #666;
+        font-size: 14px;
+        margin: 10px 0;
+        font-style: italic;
+      }
+
+      .no-data {
+        text-align: center;
+        padding: 30px;
+        color: #666;
+        background: white;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Twitter Trends Scraper</h1>
-    <button id="scrapeButton" onclick="scrapeTrends()">Click here to run the script</button>
-    <div id="error-message"></div>
-    <div id="results"></div>
+
+    <div id="current-tab">
+      <button id="scrapeButton" onclick="scrapeTrends()">
+        Fetch Current Trends
+      </button>
+      <div id="error-message"></div>
+      <div id="results"></div>
+    </div>
 
     <script>
-        let isLoading = false;
+      let isLoading = false;
 
-        async function scrapeTrends() {
-            if (isLoading) return;
-            
-            const resultsDiv = document.getElementById('results');
-            const errorDiv = document.getElementById('error-message');
-            const button = document.getElementById('scrapeButton');
-            
-            // Set loading state
-            isLoading = true;
-            button.disabled = true;
-            resultsDiv.innerHTML = '<div class="loading">Loading trends...</div>';
-            errorDiv.style.display = 'none';
+      function showTab(tabName, element) {
+        // Update tab buttons
+        document.querySelectorAll(".tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+        element.classList.add("active");
 
-            try {
-                const response = await fetch('http://localhost:3000/scrape');
-                if (!response.ok) throw new Error(await response.text());
-                const data = await response.json();
+        // Show/hide content
+        if (tabName === "current") {
+          document.getElementById("current-tab").style.display = "block";
+          document.getElementById("history-tab").style.display = "none";
+        } else {
+          document.getElementById("current-tab").style.display = "none";
+          document.getElementById("history-tab").style.display = "block";
+          fetchHistory();
+        }
+      }
 
-                // Format the date
-                const timestamp = new Date(data.timestamp).toLocaleString();
+      async function scrapeTrends() {
+        if (isLoading) return;
 
-                // Update results
-                resultsDiv.innerHTML = `
+        const resultsDiv = document.getElementById("results");
+        const errorDiv = document.getElementById("error-message");
+        const button = document.getElementById("scrapeButton");
+
+        isLoading = true;
+        button.disabled = true;
+        resultsDiv.innerHTML =
+          '<div class="loading">Fetching latest trends...</div>';
+        errorDiv.style.display = "none";
+
+        try {
+          const response = await fetch("http://localhost:5501/scrape");
+          if (!response.ok) throw new Error(await response.text());
+          const data = await response.json();
+
+          const scrapedTime = new Date(data.timestamp).toLocaleString();
+          const accessTime = new Date(data.accessTimestamp).toLocaleString();
+
+          resultsDiv.innerHTML = `
                     <div class="trends-container">
-                        <h2>Trending topics as of ${timestamp}</h2>
+                        <h2>Trending Topics</h2>
+                        <div class="ip-info">
+                            <div class="info-grid">
+                                <span class="info-label">IP Address:</span>
+                                <span>${data.clientIP}</span>
+                                <span class="info-label">Scrape Time:</span>
+                                <span>${scrapedTime}</span>
+                                <span class="info-label">Access Time:</span>
+                                <span>${accessTime}</span>
+                                <span class="info-label">User Agent:</span>
+                                <span>${
+                                  data.userAgent || "Not available"
+                                }</span>
+                            </div>
+                        </div>
                         <ul class="trends-list">
-                            ${data.trends.map(trend => `<li>${trend}</li>`).join('')}
+                            ${data.trends
+                              .map((trend) => `<li>${trend}</li>`)
+                              .join("")}
                         </ul>
-                        <h3>MongoDB Record:</h3>
-                        <div class="mongo-record">${JSON.stringify(data, null, 2)}</div>
-                        <button onclick="scrapeTrends()" style="margin-top: 15px;">Run again</button>
+                        <h3>Database Record:</h3>
+                        <div class="mongo-record">${JSON.stringify(
+                          data,
+                          null,
+                          2
+                        )}</div>
                     </div>
                 `;
-            } catch (error) {
-                errorDiv.style.display = 'block';
-                errorDiv.innerHTML = `Error: ${error.message}`;
-                resultsDiv.innerHTML = '';
-            } finally {
-                isLoading = false;
-                button.disabled = false;
-            }
+        } catch (error) {
+          errorDiv.style.display = "block";
+          errorDiv.innerHTML = `Error: ${error.message}`;
+          resultsDiv.innerHTML = "";
+        } finally {
+          isLoading = false;
+          button.disabled = false;
         }
+      }
+
+      // Initial load
     </script>
-</body>
+  </body>
 </html>

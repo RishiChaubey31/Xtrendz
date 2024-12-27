@@ -235,65 +235,39 @@
       }
 
       async function scrapeTrends() {
-        if (isLoading) return;
+    if (isLoading) return;
 
-        const resultsDiv = document.getElementById("results");
-        const errorDiv = document.getElementById("error-message");
-        const button = document.getElementById("scrapeButton");
+    const resultsDiv = document.getElementById("results");
+    const errorDiv = document.getElementById("error-message");
+    const button = document.getElementById("scrapeButton");
 
-        isLoading = true;
-        button.disabled = true;
-        resultsDiv.innerHTML =
-          '<div class="loading">Fetching latest trends...</div>';
-        errorDiv.style.display = "none";
+    isLoading = true;
+    button.disabled = true;
+    resultsDiv.innerHTML = '<div class="loading">Fetching latest trends...</div>';
+    errorDiv.style.display = "none";
 
-        try {
-          const response = await fetch("http://localhost:5501/scrape");
-          if (!response.ok) throw new Error(await response.text());
-          const data = await response.json();
-
-          const scrapedTime = new Date(data.timestamp).toLocaleString();
-          const accessTime = new Date(data.accessTimestamp).toLocaleString();
-
-          resultsDiv.innerHTML = `
-                    <div class="trends-container">
-                        <h2>Trending Topics</h2>
-                        <div class="ip-info">
-                            <div class="info-grid">
-                                <span class="info-label">IP Address:</span>
-                                <span>${data.clientIP}</span>
-                                <span class="info-label">Scrape Time:</span>
-                                <span>${scrapedTime}</span>
-                                <span class="info-label">Access Time:</span>
-                                <span>${accessTime}</span>
-                                <span class="info-label">User Agent:</span>
-                                <span>${
-                                  data.userAgent || "Not available"
-                                }</span>
-                            </div>
-                        </div>
-                        <ul class="trends-list">
-                            ${data.trends
-                              .map((trend) => `<li>${trend}</li>`)
-                              .join("")}
-                        </ul>
-                        <h3>Database Record:</h3>
-                        <div class="mongo-record">${JSON.stringify(
-                          data,
-                          null,
-                          2
-                        )}</div>
-                    </div>
-                `;
-        } catch (error) {
-          errorDiv.style.display = "block";
-          errorDiv.innerHTML = `Error: ${error.message}`;
-          resultsDiv.innerHTML = "";
-        } finally {
-          isLoading = false;
-          button.disabled = false;
-        }
-      }
+    try {
+        const response = await fetch("https://stir-2t4wwvje1-rishi-chaubeys-projects.vercel.app/api/scrape", {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) throw new Error(await response.text());
+        const data = await response.json();
+        // Rest of your code remains the same
+    } catch (error) {
+        errorDiv.style.display = "block";
+        errorDiv.innerHTML = `Error: ${error.message}`;
+        resultsDiv.innerHTML = "";
+    } finally {
+        isLoading = false;
+        button.disabled = false;
+    }
+}
 
       // Initial load
     </script>

@@ -192,11 +192,19 @@ async function saveTrendsToMongo(trendsData, clientIP, userAgent) {
 }
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: true, // Allow all origins
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['X-Requested-With', 'Content-Type', 'Accept']
+}));
 app.use(express.json());
+
+
 app.set("trust proxy", true);
 
-app.get("/scrape", async (req, res) => {
+
+app.get("/api/scrape", async (req, res) => {
   try {
     const clientIP = getClientIP(req);
     const userAgent = req.headers["user-agent"];
@@ -214,3 +222,5 @@ app.get("/scrape", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+module.exports = app;

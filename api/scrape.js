@@ -1,9 +1,7 @@
-// File: index.js
+// File: api/scrape.js
 const { Builder, By, until } = require("selenium-webdriver");
 const chrome = require("selenium-webdriver/chrome");
 const { MongoClient } = require("mongodb");
-const express = require("express");
-const cors = require("cors");
 const crypto = require("crypto");
 require("dotenv").config();
 
@@ -13,6 +11,22 @@ const TWITTER_PASSWORD = process.env.TWITTER_PASSWORD;
 
 // Helper function for delays
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Helper function to safely execute each step
+async function executeSafely(stepName, func) {
+  try {
+    const result = await func();
+    console.log(`✓ ${stepName} completed successfully`);
+    return result;
+  } catch (error) {
+    console.error(`✗ ${stepName} failed:`, error.message);
+    throw {
+      step: stepName,
+      error: error.message,
+      stack: error.stack
+    };
+  }
+}
 
 // Helper function to wait for and find element with multiple possible selectors
 async function findElementWithRetry(driver, selectors, timeout = 10000) {
@@ -28,9 +42,7 @@ async function findElementWithRetry(driver, selectors, timeout = 10000) {
     }
     await delay(500);
   }
-  throw new Error(
-    `Could not find element with selectors: ${JSON.stringify(selectors)}`
-  );
+  throw new Error(`Could not find element with selectors: ${JSON.stringify(selectors)}`);
 }
 
 // Get client IP address
@@ -112,10 +124,7 @@ async function scrapeTrendingTopics() {
       By.xpath("//span[contains(text(), 'Log in')]/.."),
     ];
 
-    const loginButton = await findElementWithRetry(
-      driver,
-      loginButtonSelectors
-    );
+    const loginButton = await findElementWithRetry(driver, loginButtonSelectors);
     console.log("Found login button, clicking...");
     await loginButton.click();
     await delay(5000);
@@ -191,36 +200,60 @@ async function saveTrendsToMongo(trendsData, clientIP, userAgent) {
   }
 }
 
-const app = express();
-app.use(cors({
-  origin: true, // Allow all origins
-  credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['X-Requested-With', 'Content-Type', 'Accept']
-}));
-app.use(express.json());
+// Export the serverless function handler
+module.exports = async (req, res) => {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-Requested-With, Content-Type, Accept'
+  );
 
+  // Handle OPTIONS request
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-app.set("trust proxy", true);
+  // Only allow GET requests
+  if (req.method !== 'GET') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
 
-
-app.get("/scrape", async (req, res) => {
   try {
+    // Verify environment variables
+    await executeSafely('Environment Check', () => {
+      const required = ['MONGO_URI', 'TWITTER_USERNAME', 'TWITTER_PASSWORD'];
+      const missing = required.filter(key => !process.env[key]);
+      if (missing.length > 0) {
+        throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+      }
+      return true;
+    });
+
     const clientIP = getClientIP(req);
     const userAgent = req.headers["user-agent"];
-    const trendsData = await scrapeTrendingTopics();
-    const savedData = await saveTrendsToMongo(trendsData, clientIP, userAgent);
-    res.json(savedData);
+    
+    const trendsData = await executeSafely('Scraping Trends', async () => {
+      return await scrapeTrendingTopics();
+    });
+    
+    const savedData = await executeSafely('Saving to MongoDB', async () => {
+      return await saveTrendsToMongo(trendsData, clientIP, userAgent);
+    });
+    
+    res.status(200).json(savedData);
   } catch (error) {
     console.error("Server error:", error);
     res.status(500).json({
-      error: "Failed to scrape trends",
-      message: error.message,
+      status: 'error',
+      failedStep: error.step || 'unknown',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
-});
-
-const PORT = process.env.PORT || 3000;
-
-
-module.exports = app;
+};

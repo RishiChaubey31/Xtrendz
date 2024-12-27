@@ -2,7 +2,7 @@
     "version": 2,
     "builds": [
         {
-            "src": "api/server.js",
+            "src": "api/index.js",
             "use": "@vercel/node"
         },
         {
@@ -20,7 +20,7 @@
                 "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept",
                 "Access-Control-Allow-Credentials": "true"
             },
-            "dest": "/api/server.js"
+            "dest": "/api/index.js"
         },
         {
             "src": "/(.*)",
